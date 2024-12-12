@@ -189,9 +189,7 @@ public class QuickFitMemoryAllocationSwing {
         }
     }
 
-    /**
-     * Main method to start the application.
-     */
+    
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             QuickFitMemoryAllocationSwing simulator = new QuickFitMemoryAllocationSwing();
