@@ -1,6 +1,8 @@
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
-import java.awt.BorderLayout;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
 /**
@@ -44,21 +46,53 @@ public class FirstFitMemoryAllocationSwing {
         // Create the frame
         JFrame frame = new JFrame("First Fit Memory Allocation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400);
+        frame.setSize(800, 500);
+        frame.setLocationRelativeTo(null); // Center the window on screen
+
+        // Use a light theme for the background
+        frame.getContentPane().setBackground(new Color(245, 245, 245));
 
         // Create the table model and table
         tableModel = new MemoryTableModel(memoryBlocks);
         memoryTable = new JTable(tableModel);
+        memoryTable.setFont(new Font("Arial", Font.PLAIN, 14));
+        memoryTable.setRowHeight(30);
+        memoryTable.setSelectionBackground(new Color(173, 216, 230)); // Light blue selection color
+        memoryTable.setSelectionForeground(Color.BLACK);
+
+        // Add striped row color
+        memoryTable.setDefaultRenderer(Object.class, (table, value, isSelected, hasFocus, row, column) -> {
+            JLabel label = new JLabel(value.toString());
+            if (row % 2 == 0) {
+                label.setBackground(new Color(240, 240, 240)); // Light gray for even rows
+            } else {
+                label.setBackground(Color.WHITE);
+            }
+
+            if (column == 4) { // Check the 'Occupied' column
+                String isOccupied = (String) table.getValueAt(row, column);
+                if (isOccupied.equals("Yes")) {
+                    label.setBackground(new Color(144, 238, 144)); // Light green for Yes
+                } else if (isOccupied.equals("No")) {
+                    label.setBackground(new Color(255, 99, 71)); // Light red for No
+                }
+            }
+            label.setOpaque(true);
+            return label;
+        });
 
         // Create GUI elements
         JLabel processLabel = new JLabel("Process Size (KB):");
+        processLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         JTextField processField = new JTextField(10);
-        JButton allocateButton = new JButton("Allocate Memory");
-        JButton deallocateButton = new JButton("Deallocate Block");
-        JButton resetButton = new JButton("Reset Memory");
+        processField.setFont(new Font("Arial", Font.PLAIN, 14));
+        JButton allocateButton = createStyledButton("Allocate Memory");
+        JButton deallocateButton = createStyledButton("Deallocate Block");
+        JButton resetButton = createStyledButton("Reset Memory");
 
         // Layout setup
         JPanel inputPanel = new JPanel();
+        inputPanel.setBackground(new Color(245, 245, 245)); // Match background
         inputPanel.add(processLabel);
         inputPanel.add(processField);
         inputPanel.add(allocateButton);
@@ -68,7 +102,7 @@ public class FirstFitMemoryAllocationSwing {
         JScrollPane tableScrollPane = new JScrollPane(memoryTable);
 
         // Add panels to the frame
-        frame.setLayout(new BorderLayout());
+        frame.setLayout(new BorderLayout(10, 10));
         frame.add(inputPanel, BorderLayout.NORTH);
         frame.add(tableScrollPane, BorderLayout.CENTER);
 
@@ -167,7 +201,7 @@ public class FirstFitMemoryAllocationSwing {
      * Custom Table Model for displaying memory block information.
      */
     static class MemoryTableModel extends AbstractTableModel {
-        private final String[] columnNames = {"Block Number", "Block Size (KB)", "Allocated Size (KB)", "Free Size (KB)", "Occupied (True/False)"};
+        private final String[] columnNames = {"Block Number", "Block Size (KB)", "Allocated Size (KB)", "Free Size (KB)", "Occupied (Yes/No)"};
         private final ArrayList<MemoryBlock> memoryBlocks;
 
         MemoryTableModel(ArrayList<MemoryBlock> memoryBlocks) {
@@ -197,7 +231,7 @@ public class FirstFitMemoryAllocationSwing {
                 case 3:
                     return block.blockSize - block.allocatedSize;
                 case 4:
-                    return block.isOccupied;
+                    return block.isOccupied ? "Yes" : "No";
             }
             return null;
         }
@@ -209,12 +243,35 @@ public class FirstFitMemoryAllocationSwing {
     }
 
     /**
-     * Main method to start the application.
+     * Method to create styled buttons.
      */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            FirstFitMemoryAllocationSwing simulator = new FirstFitMemoryAllocationSwing();
-            simulator.createAndShowGUI();
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(new Color(100, 149, 237)); // Cornflower Blue
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                button.setBackground(button.getBackground().darker());
+                Timer timer = new Timer(100, new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        button.setBackground(new Color(100, 149, 237)); // Reset to original
+                    }
+                });
+                timer.setRepeats(false);
+                timer.start();
+            }
         });
+        return button;
+    }
+
+    public static void main(String[] args) {
+        // Run the GUI application
+        SwingUtilities.invokeLater(() -> new FirstFitMemoryAllocationSwing().createAndShowGUI());
     }
 }
