@@ -1,15 +1,10 @@
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.util.ArrayList;
 
-/**
- * FirstFitMemoryAllocationSwing
- * This program simulates the First Fit memory allocation algorithm using a Swing-based GUI.
- * It displays memory block details including True/False status for whether the block is occupied.
- */
 public class FirstFitMemoryAllocationSwing {
 
     // Memory Block class
@@ -46,7 +41,7 @@ public class FirstFitMemoryAllocationSwing {
         // Create the frame
         JFrame frame = new JFrame("First Fit Memory Allocation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 500);
+        frame.setSize(900, 600);  // Increased frame size
         frame.setLocationRelativeTo(null); // Center the window on screen
 
         // Use a light theme for the background
@@ -55,14 +50,20 @@ public class FirstFitMemoryAllocationSwing {
         // Create the table model and table
         tableModel = new MemoryTableModel(memoryBlocks);
         memoryTable = new JTable(tableModel);
-        memoryTable.setFont(new Font("Arial", Font.PLAIN, 14));
-        memoryTable.setRowHeight(30);
+        memoryTable.setFont(new Font("Arial", Font.PLAIN, 18));  // Increased font size
+        memoryTable.setRowHeight(40);  // Increased row height
         memoryTable.setSelectionBackground(new Color(173, 216, 230)); // Light blue selection color
         memoryTable.setSelectionForeground(Color.BLACK);
 
-        // Add striped row color
+        // Center the text in all cells
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        memoryTable.setDefaultRenderer(Object.class, centerRenderer);
+
+        // Customize the table's renderer for better colors
         memoryTable.setDefaultRenderer(Object.class, (table, value, isSelected, hasFocus, row, column) -> {
             JLabel label = new JLabel(value.toString());
+            label.setHorizontalAlignment(SwingConstants.CENTER); // Center the text
             if (row % 2 == 0) {
                 label.setBackground(new Color(240, 240, 240)); // Light gray for even rows
             } else {
@@ -110,11 +111,14 @@ public class FirstFitMemoryAllocationSwing {
         allocateButton.addActionListener(e -> {
             try {
                 int processSize = Integer.parseInt(processField.getText());
+                if (processSize <= 0) {
+                    throw new NumberFormatException();
+                }
                 allocateMemory(processSize);
                 tableModel.fireTableDataChanged();
                 processField.setText("");
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Please enter a valid process size.",
+                JOptionPane.showMessageDialog(frame, "Please enter a valid positive process size.",
                         "Invalid Input", JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -253,20 +257,6 @@ public class FirstFitMemoryAllocationSwing {
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                button.setBackground(button.getBackground().darker());
-                Timer timer = new Timer(100, new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        button.setBackground(new Color(100, 149, 237)); // Reset to original
-                    }
-                });
-                timer.setRepeats(false);
-                timer.start();
-            }
-        });
         return button;
     }
 
