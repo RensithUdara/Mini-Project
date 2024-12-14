@@ -2,7 +2,6 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 
 public class FirstFitMemoryAllocationSwing {
@@ -25,8 +24,11 @@ public class FirstFitMemoryAllocationSwing {
     private MemoryTableModel tableModel;
 
     public FirstFitMemoryAllocationSwing() {
-        // Initialize memory blocks
         memoryBlocks = new ArrayList<>();
+        initializeMemoryBlocks();
+    }
+
+    private void initializeMemoryBlocks() {
         memoryBlocks.add(new MemoryBlock(200));
         memoryBlocks.add(new MemoryBlock(300));
         memoryBlocks.add(new MemoryBlock(100));
@@ -34,176 +36,137 @@ public class FirstFitMemoryAllocationSwing {
         memoryBlocks.add(new MemoryBlock(50));
     }
 
-    /**
-     * Creates the GUI and sets up the actions.
-     */
     public void createAndShowGUI() {
-        // Create the frame
         JFrame frame = new JFrame("First Fit Memory Allocation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 600);  // Increased frame size
-        frame.setLocationRelativeTo(null); // Center the window on screen
+        frame.setSize(900, 600);
+        frame.setLocationRelativeTo(null);
 
-        // Use a light theme for the background
-        frame.getContentPane().setBackground(new Color(245, 245, 245));
-
-        // Create the table model and table
         tableModel = new MemoryTableModel(memoryBlocks);
-        memoryTable = new JTable(tableModel);
-        memoryTable.setFont(new Font("Arial", Font.PLAIN, 18));  // Increased font size
-        memoryTable.setRowHeight(40);  // Increased row height
-        memoryTable.setSelectionBackground(new Color(173, 216, 230)); // Light blue selection color
-        memoryTable.setSelectionForeground(Color.BLACK);
+        memoryTable = createMemoryTable();
 
-        // Center the text in all cells
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        memoryTable.setDefaultRenderer(Object.class, centerRenderer);
+        JPanel inputPanel = createInputPanel();
+        JScrollPane tableScrollPane = new JScrollPane(memoryTable);
 
-        // Customize the table's renderer for better colors
-        memoryTable.setDefaultRenderer(Object.class, (table, value, isSelected, hasFocus, row, column) -> {
-            JLabel label = new JLabel(value.toString());
-            label.setHorizontalAlignment(SwingConstants.CENTER); // Center the text
-            if (row % 2 == 0) {
-                label.setBackground(new Color(240, 240, 240)); // Light gray for even rows
-            } else {
-                label.setBackground(Color.WHITE);
-            }
+        frame.setLayout(new BorderLayout(10, 10));
+        frame.add(inputPanel, BorderLayout.NORTH);
+        frame.add(tableScrollPane, BorderLayout.CENTER);
+        frame.setVisible(true);
+    }
 
-            if (column == 4) { // Check the 'Occupied' column
-                String isOccupied = (String) table.getValueAt(row, column);
-                if (isOccupied.equals("Yes")) {
-                    label.setBackground(new Color(144, 238, 144)); // Light green for Yes
-                } else if (isOccupied.equals("No")) {
-                    label.setBackground(new Color(255, 99, 71)); // Light red for No
-                }
-            }
-            label.setOpaque(true);
-            return label;
-        });
+    private JTable createMemoryTable() {
+        JTable table = new JTable(tableModel);
+        table.setFont(new Font("Arial", Font.PLAIN, 18));
+        table.setRowHeight(40);
+        table.setSelectionBackground(new Color(173, 216, 230));
+        table.setSelectionForeground(Color.BLACK);
+        table.setDefaultRenderer(Object.class, new CustomRenderer());
+        return table;
+    }
 
-        // Create GUI elements
+    private JPanel createInputPanel() {
+        JPanel panel = new JPanel();
+        panel.setBackground(new Color(245, 245, 245));
+
         JLabel processLabel = new JLabel("Process Size (KB):");
         processLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         JTextField processField = new JTextField(10);
         processField.setFont(new Font("Arial", Font.PLAIN, 14));
+
         JButton allocateButton = createStyledButton("Allocate Memory");
         JButton deallocateButton = createStyledButton("Deallocate Block");
         JButton resetButton = createStyledButton("Reset Memory");
 
-        // Layout setup
-        JPanel inputPanel = new JPanel();
-        inputPanel.setBackground(new Color(245, 245, 245)); // Match background
-        inputPanel.add(processLabel);
-        inputPanel.add(processField);
-        inputPanel.add(allocateButton);
-        inputPanel.add(deallocateButton);
-        inputPanel.add(resetButton);
+        allocateButton.addActionListener(e -> handleAllocate(processField));
+        deallocateButton.addActionListener(e -> handleDeallocate());
+        resetButton.addActionListener(e -> handleReset());
 
-        JScrollPane tableScrollPane = new JScrollPane(memoryTable);
+        panel.add(processLabel);
+        panel.add(processField);
+        panel.add(allocateButton);
+        panel.add(deallocateButton);
+        panel.add(resetButton);
 
-        // Add panels to the frame
-        frame.setLayout(new BorderLayout(10, 10));
-        frame.add(inputPanel, BorderLayout.NORTH);
-        frame.add(tableScrollPane, BorderLayout.CENTER);
-
-        // Action listeners
-        allocateButton.addActionListener(e -> {
-            try {
-                int processSize = Integer.parseInt(processField.getText());
-                if (processSize <= 0) {
-                    throw new NumberFormatException();
-                }
-                allocateMemory(processSize);
-                tableModel.fireTableDataChanged();
-                processField.setText("");
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Please enter a valid positive process size.",
-                        "Invalid Input", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        deallocateButton.addActionListener(e -> {
-            String blockInput = JOptionPane.showInputDialog(frame, "Enter Block Number to Deallocate:");
-            if (blockInput != null) {
-                try {
-                    int blockIndex = Integer.parseInt(blockInput) - 1;
-                    deallocateMemory(blockIndex);
-                    tableModel.fireTableDataChanged();
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(frame, "Please enter a valid block number.",
-                            "Invalid Input", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        resetButton.addActionListener(e -> {
-            resetMemory();
-            tableModel.fireTableDataChanged();
-        });
-
-        // Show the frame
-        frame.setVisible(true);
+        return panel;
     }
 
-    /**
-     * Allocates memory using the First Fit algorithm.
-     *
-     * @param processSize Size of the process to allocate (in KB).
-     */
+    private void handleAllocate(JTextField processField) {
+        try {
+            int processSize = Integer.parseInt(processField.getText());
+            if (processSize <= 0) throw new NumberFormatException();
+            allocateMemory(processSize);
+            tableModel.fireTableDataChanged();
+            processField.setText("");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(null, "Please enter a valid positive process size.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleDeallocate() {
+        String blockInput = JOptionPane.showInputDialog("Enter Block Number to Deallocate:");
+        if (blockInput != null) {
+            try {
+                int blockIndex = Integer.parseInt(blockInput) - 1;
+                deallocateMemory(blockIndex);
+                tableModel.fireTableDataChanged();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Please enter a valid block number.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void handleReset() {
+        resetMemory();
+        tableModel.fireTableDataChanged();
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(new Color(100, 149, 237));
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
     private void allocateMemory(int processSize) {
         for (int i = 0; i < memoryBlocks.size(); i++) {
             MemoryBlock block = memoryBlocks.get(i);
             if (!block.isOccupied && block.blockSize >= processSize) {
                 block.allocatedSize = processSize;
                 block.isOccupied = true;
-                JOptionPane.showMessageDialog(null, "Process allocated to Block " + (i + 1),
-                        "Allocation Successful", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Process allocated to Block " + (i + 1), "Allocation Successful", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
         }
-        JOptionPane.showMessageDialog(null, "No suitable block found for process size " + processSize + " KB.",
-                "Allocation Failed", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(null, "No suitable block found for process size " + processSize + " KB.", "Allocation Failed", JOptionPane.ERROR_MESSAGE);
     }
 
-    /**
-     * Deallocates memory from a specific block.
-     *
-     * @param blockIndex The index of the block to deallocate.
-     */
     private void deallocateMemory(int blockIndex) {
         if (blockIndex < 0 || blockIndex >= memoryBlocks.size()) {
-            JOptionPane.showMessageDialog(null, "Invalid block number.",
-                    "Deallocation Failed", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Invalid block number.", "Deallocation Failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
         MemoryBlock block = memoryBlocks.get(blockIndex);
         if (block.isOccupied) {
             block.allocatedSize = 0;
             block.isOccupied = false;
-            JOptionPane.showMessageDialog(null, "Block " + (blockIndex + 1) + " deallocated.",
-                    "Deallocation Successful", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Block " + (blockIndex + 1) + " deallocated.", "Deallocation Successful", JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(null, "Block " + (blockIndex + 1) + " is already free.",
-                    "Deallocation Failed", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Block " + (blockIndex + 1) + " is already free.", "Deallocation Failed", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    /**
-     * Resets all memory blocks to their initial state.
-     */
     private void resetMemory() {
         for (MemoryBlock block : memoryBlocks) {
             block.allocatedSize = 0;
             block.isOccupied = false;
         }
-        JOptionPane.showMessageDialog(null, "All memory blocks have been reset.",
-                "Reset Successful", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, "All memory blocks have been reset.", "Reset Successful", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /**
-     * Custom Table Model for displaying memory block information.
-     */
     static class MemoryTableModel extends AbstractTableModel {
         private final String[] columnNames = {"Block Number", "Block Size (KB)", "Allocated Size (KB)", "Free Size (KB)", "Occupied (Yes/No)"};
         private final ArrayList<MemoryBlock> memoryBlocks;
@@ -226,16 +189,11 @@ public class FirstFitMemoryAllocationSwing {
         public Object getValueAt(int rowIndex, int columnIndex) {
             MemoryBlock block = memoryBlocks.get(rowIndex);
             switch (columnIndex) {
-                case 0:
-                    return rowIndex + 1;
-                case 1:
-                    return block.blockSize;
-                case 2:
-                    return block.allocatedSize;
-                case 3:
-                    return block.blockSize - block.allocatedSize;
-                case 4:
-                    return block.isOccupied ? "Yes" : "No";
+                case 0: return rowIndex + 1;
+                case 1: return block.blockSize;
+                case 2: return block.allocatedSize;
+                case 3: return block.blockSize - block.allocatedSize;
+                case 4: return block.isOccupied ? "Yes" : "No";
             }
             return null;
         }
@@ -246,22 +204,29 @@ public class FirstFitMemoryAllocationSwing {
         }
     }
 
-    /**
-     * Method to create styled buttons.
-     */
-    private JButton createStyledButton(String text) {
-        JButton button = new JButton(text);
-        button.setBackground(new Color(100, 149, 237)); // Cornflower Blue
-        button.setForeground(Color.WHITE);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return button;
+    static class CustomRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel label = new JLabel(value.toString());
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            label.setOpaque(true);
+
+            if (row % 2 == 0) {
+                label.setBackground(new Color(240, 240, 240));
+            } else {
+                label.setBackground(Color.WHITE);
+            }
+
+            if (column == 4) {
+                String isOccupied = value.toString();
+                label.setBackground(isOccupied.equals("Yes") ? new Color(144, 238, 144) : new Color(255, 99, 71));
+            }
+
+            return label;
+        }
     }
 
     public static void main(String[] args) {
-        // Run the GUI application
         SwingUtilities.invokeLater(() -> new FirstFitMemoryAllocationSwing().createAndShowGUI());
     }
 }
